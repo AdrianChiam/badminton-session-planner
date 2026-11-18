@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Badminton Session Planner</title>
+<style>
+  :root {
+    --bg: #f7f8f6;
+    --card: #ffffff;
+    --text: #2e3436;
+    --muted: #7a8288;
+    --accent: #3e7d5a;
+    --accent-light: #e7f2ec;
+    --border: #e3e7e4;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    line-height: 1.5;
+  }
+  .wrap {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 32px 20px 60px;
+  }
+  header { margin-bottom: 28px; }
+  header h1 { margin: 0 0 4px; font-size: 26px; font-weight: 600; }
+  header p { margin: 0; color: var(--muted); font-size: 14px; }
+
+  section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px;
+    margin-bottom: 20px;
+  }
+  h2 { margin: 0 0 4px; font-size: 18px; font-weight: 600; }
+  .sub { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+
+  /* Player list */
+  .player-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 15px;
+  }
+  .player-row:last-of-type { border-bottom: none; }
+  .count-chip {
+    display: inline-block;
+    background: var(--accent-light);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 3px 12px;
+    margin-bottom: 10px;
+  }
+  .add-player {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  input[type="text"], input[type="time"], select {
+    font-size: 15px;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--text);
+    outline: none;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  .add-player input { flex: 1; }
+  button {
+    font-size: 15px;
+    padding: 9px 16px;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+  }
+  button:hover { filter: brightness(1.07); }
+  .remove-btn {
+    background: none;
+    color: var(--muted);
+    font-size: 13px;
+    padding: 2px 6px;
+  }
+  .remove-btn:hover { color: #b04a4a; filter: none; }
+  .hint { color: #b04a4a; font-size: 13px; margin-top: 8px; min-height: 0; }
+
+  /* Session details */
+  .session-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px 16px;
+    align-items: center;
+    font-size: 15px;
+  }
+  .session-grid label { color: var(--muted); }
+  .session-grid input, .session-grid select { width: 100%; }
+
+  /* Rental */
+  .rental-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 15px;
+  }
+  .rental-row:last-of-type { border-bottom: none; }
+  .rental-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  .status {
+    margin-left: auto;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 3px 12px;
+  }
+  .status.ready { background: var(--accent-light); color: var(--accent); }
+  .status.pending { background: #f2eee3; color: #a07d2e; }
+  .rental-row.ready-text { color: var(--muted); text-decoration: line-through; }
+
+  footer { text-align: center; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Badminton Session Planner</h1>
+    <p>Plan your game — players, session details and rentals in one place.</p>
+  </header>
+
+  <!-- 1. Player list -->
+  <section id="players-section">
+    <h2>Player List</h2>
+    <p class="sub">Who is coming to the game?</p>
+    <span class="count-chip" id="player-count">0 players coming</span>
+    <div id="player-list"></div>
+    <div class="add-player">
+      <input type="text" id="player-name" placeholder="Type a player's name" aria-label="Player name">
+      <button id="add-player-btn" type="button">Add Player</button>
+    </div>
+    <div class="hint" id="player-hint"></div>
+  </section>
+
+  <!-- 2. Session details -->
+  <section id="session-section">
+    <h2>Session Details</h2>
+    <p class="sub">Time, court and location — edit directly below.</p>
+    <div class="session-grid">
+      <label for="session-time">Time</label>
+      <input type="time" id="session-time" value="20:30">
+      <label for="session-court">Court</label>
+      <select id="session-court">
+        <option>Court 1</option>
+        <option selected>Court 2</option>
+        <option>Court 3</option>
+        <option>Court 4</option>
+      </select>
+      <label for="session-location">Location</label>
+      <input type="text" id="session-location" value="Sunway Sports Arena, Petaling Jaya">
+    </div>
+    <p class="sub" style="margin-top:14px" id="session-summary"></p>
+  </section>
+
+  <!-- 3. Rentals -->
+  <section id="rental-section">
+    <h2>Shuttlecocks &amp; Racket Rental</h2>
+    <p class="sub">Tick items when they are ready.</p>
+    <div id="rental-list"></div>
+  </section>
+
+  <footer>Sample data only — nothing is saved between visits.</footer>
+</div>
+
+<script>
+  // ---- Sample data (Malaysia-specific, made up) ----
+  let players = [
+    { name: "Adrian Chiam" },
+    { name: "Nurul Aisyah" },
+    { name: "Wong Kar Wai" }
+  ];
+
+  let rentals = [
+    { id: 1, label: "Shuttlecocks (1 tube of 12, RSL no. 1)", ready: false },
+    { id: 2, label: "Racket rental — Court 2 counter", ready: false },
+    { id: 3, label: "Grip tape & spare towel grip", ready: true }
+  ];
+
+  const rentalNextId = () => Math.max(0, ...rentals.map(r => r.id)) + 1;
+
+  // ---- Section 1: Players ----
+  const playerListEl = document.getElementById("player-list");
+  const playerCountEl = document.getElementById("player-count");
+  const playerNameEl = document.getElementById("player-name");
+  const playerHintEl = document.getElementById("player-hint");
+
+  function renderPlayers() {
+    playerListEl.innerHTML = "";
+    players.forEach((p, i) => {
+      const row = document.createElement("div");
+      row.className = "player-row";
+      const nameSpan = document.createElement("span");
+      nameSpan.textContent = p.name;
+      const rm = document.createElement("button");
+      rm.className = "remove-btn";
+      rm.type = "button";
+      rm.textContent = "Remove";
+      rm.addEventListener("click", () => {
+        players.splice(i, 1);
+        renderPlayers();
+      });
+      row.appendChild(nameSpan);
+      row.appendChild(rm);
+      playerListEl.appendChild(row);
+    });
+    playerCountEl.textContent = players.length + " player" + (players.length === 1 ? "" : "s") + " coming";
+  }
+
+  function addPlayer() {
+    const name = playerNameEl.value.trim();
+    if (!name) {
+      playerHintEl.textContent = "Please type a name first.";
+      return;
+    }
+    if (players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+      playerHintEl.textContent = name + " is already in the list.";
+      return;
+    }
+    players.push({ name: name });
+    playerNameEl.value = "";
+    playerHintEl.textContent = "";
+    renderPlayers();
+    playerNameEl.focus();
+  }
+
+  document.getElementById("add-player-btn").addEventListener("click", addPlayer);
+  playerNameEl.addEventListener("keydown", e => { if (e.key === "Enter") addPlayer(); });
+
+  // ---- Section 2: Session details ----
+  const timeEl = document.getElementById("session-time");
+  const courtEl = document.getElementById("session-court");
+  const locEl = document.getElementById("session-location");
+  const summaryEl = document.getElementById("session-summary");
+
+  function renderSession() {
+    const t = timeEl.value || "TBA";
+    summaryEl.textContent = "Game on " + courtEl.value + ", " + t + " at " + (locEl.value.trim() || "TBA");
+  }
+  [timeEl, courtEl, locEl].forEach(el => {
+    el.addEventListener("input", renderSession);
+    el.addEventListener("change", renderSession);
+  });
+
+  // ---- Section 3: Rentals ----
+  const rentalListEl = document.getElementById("rental-list");
+
+  function renderRentals() {
+    rentalListEl.innerHTML = "";
+    rentals.forEach(item => {
+      const row = document.createElement("div");
+      row.className = "rental-row";
+
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = item.ready;
+      cb.id = "rental-" + item.id;
+      cb.addEventListener("change", () => {
+        item.ready = cb.checked;
+        renderRentals();
+      });
+
+      const lbl = document.createElement("label");
+      lbl.htmlFor = cb.id;
+      lbl.textContent = item.label;
+      if (item.ready) lbl.className = "ready-text";
+
+      const status = document.createElement("span");
+      status.className = "status " + (item.ready ? "ready" : "pending");
+      status.textContent = item.ready ? "Ready" : "Pending";
+
+      row.appendChild(cb);
+      row.appendChild(lbl);
+      row.appendChild(status);
+      rentalListEl.appendChild(row);
+    });
+  }
+
+  // ---- Initial render ----
+  renderPlayers();
+  renderSession();
+  renderRentals();
+</script>
+</body>
+</html>
